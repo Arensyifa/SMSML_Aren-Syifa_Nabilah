@@ -8,10 +8,16 @@ import dagshub
 import json
 
 # Connect MLflow
-dagshub.init(repo_owner="Arensyifa", repo_name="mlsystem-spotify-aren", mlflow=True)
+dagshub.init(
+    repo_owner="Arensyifa",
+    repo_name="mlsystem-spotify-aren",
+    mlflow=True
+)
 
-train_df = pd.read_csv("Membangun_model/spotify_preprocessed_train.csv")
-test_df = pd.read_csv("Membangun_model/spotify_preprocessed_test.csv")
+mlflow.sklearn.autolog()
+
+train_df = pd.read_csv("Membangun_model/dataset_preprocessing/spotify_preprocessed_train.csv")
+test_df = pd.read_csv("Membangun_model/dataset_preprocessing/spotify_preprocessed_test.csv")
 
 X_train = train_df.drop("popular", axis=1)
 y_train = train_df["popular"]
@@ -37,22 +43,14 @@ search = RandomizedSearchCV(
 with mlflow.start_run():
 
     search.fit(X_train, y_train)
-    best_model = search.best_estimator_
 
+    best_model = search.best_estimator_
     preds = best_model.predict(X_test)
     acc = accuracy_score(y_test, preds)
 
-    # Manual logging
-    mlflow.log_params(search.best_params_)
-    mlflow.log_metric("best_accuracy", acc)
-
-    # Save tuned model
-    mlflow.sklearn.log_model(best_model, "spotify_rf_best_model")
-
-    # Save best parameters
     with open("best_params.json", "w") as f:
         json.dump(search.best_params_, f)
 
     mlflow.log_artifact("best_params.json")
 
-print("Tuning berhasil dan artefak sudah dikirim ke DagsHub!")
+print("Hyperparameter tuning selesai (MLflow Autologging aktif)")
